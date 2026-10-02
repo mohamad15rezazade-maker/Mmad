@@ -19,12 +19,11 @@ OWNER_IDS = [8935601841, 8458210170]
 
 # ⚠️ این دوتا رو حتماً پر کن (آیدی عددی)
 WITHDRAW_CHANNEL_ID = -1004372755284   # آیدی کانال @BET_1XZX
-ALLOWED_GROUP_ID = -1003919206941      # آیدی گپ GAP_BAZIN1
+ALLOWED_GROUP_ID = -1003919206941       # آیدی گپ GAP_BAZIN1
 
 GROUP_LINK = "https://t.me/GAP_BAZIN1"
-CHANNEL_LINK = "https://t.me/BET_1XZX"
 
-# 💰 تنظیمات مالی
+# 💰 تنظیمات
 MIN_WITHDRAW = 2000
 REFERRAL_REWARD = 60
 MAX_THROWS = 3
@@ -182,9 +181,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await context.bot.send_message(
                 referrer_id,
-                f"🎉 یک نفر با لینک تو عضو شد!\n💰 +{REFERRAL_REWARD} 🐕"
+                f"🎉 یک نفر با لینک تو عضو شد!\n💰 +{REFERRAL_REWARD} DOGS"
             )
         except: pass
+    
+    bal = get_balance(u.id)
     
     kb = [
         [InlineKeyboardButton("👥 زیرمجموعه‌گیری", callback_data="u_ref")],
@@ -194,13 +195,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_owner(u.id):
         kb.append([InlineKeyboardButton("👑 پنل مدیریت", callback_data="a_panel")])
     
-    await update.message.reply_text(
+    text = (
         f"سلام {u.first_name}! 👋\n\n"
-        f"🐕 به بات **DAWGS** خوش اومدی!\n"
-        f"💰 موجودی: **{get_balance(u.id)}** 🐕\n\n"
-        f"🎮 برای بازی به گپ برو:\n{GROUP_LINK}",
-        reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown"
+        f"🐕 به بات **DAWGS** خوش اومدی!\n\n"
+        f"💰 موجودی شما: **{bal}** DOGS\n\n"
+        f"🎮 برای بازی به گپ برو:\n{GROUP_LINK}\n\n"
+        f"📋 از دکمه‌های زیر استفاده کن:"
     )
+    
+    try:
+        await update.message.reply_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(kb),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logging.error(f"خطا در start: {e}")
+        # اگه Markdown مشکل داشت، بدون پارس بفرست
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
 
 async def help_cmd(update, context):
     await update.message.reply_text(
@@ -212,10 +224,10 @@ async def help_cmd(update, context):
         "`1 دارت 100` → بازی دارت\n\n"
         "🔹 **نمایش موجودی:**\n"
         "`موجودی` یا `م`\n\n"
-        "🔹 **انتقال داگز:**\n"
+        "🔹 **انتقال DOGS:**\n"
         "`انتقال 500` + ریپلای روی کاربر\n"
         "`انتقال 500 @username`\n\n"
-        "🔹 **حداقل برداشت:** 2000 🐕",
+        "🔹 **حداقل برداشت:** 2000 DOGS",
         parse_mode="Markdown"
     )
 
@@ -233,14 +245,15 @@ async def cb_user_ref(update, context):
         f"👥 **زیرمجموعه‌گیری**\n\n"
         f"🔗 لینک دعوت تو:\n`{link}`\n\n"
         f"👤 تعداد زیرمجموعه: **{cnt}**\n"
-        f"🎁 پاداش هر نفر: **{REFERRAL_REWARD}** 🐕",
+        f"🎁 پاداش هر نفر: **{REFERRAL_REWARD}** DOGS",
         parse_mode="Markdown"
     )
 
 async def cb_user_bal(update, context):
     q = update.callback_query; await q.answer()
+    bal = get_balance(q.from_user.id)
     await q.edit_message_text(
-        f"💰 موجودی: **{get_balance(q.from_user.id)}** 🐕\n\n"
+        f"💰 موجودی شما: **{bal}** DOGS\n\n"
         f"🎮 برای بازی: {GROUP_LINK}",
         parse_mode="Markdown"
     )
@@ -250,16 +263,17 @@ async def cb_user_wd(update, context):
     bal = get_balance(q.from_user.id)
     if bal < MIN_WITHDRAW:
         await q.edit_message_text(
-            f"❌ حداقل برداشت **{MIN_WITHDRAW}** 🐕\n💰 موجودی تو: {bal} 🐕",
+            f"❌ حداقل برداشت **{MIN_WITHDRAW}** DOGS\n"
+            f"💰 موجودی تو: {bal} DOGS",
             parse_mode="Markdown"
         )
         return
     user_state[q.from_user.id] = "withdraw"
     await q.edit_message_text(
         f"💳 **برداشت**\n\n"
-        f"💰 موجودی: {bal} 🐕\n"
-        f"📌 حداقل برداشت: {MIN_WITHDRAW} 🐕\n\n"
-        f"مبلغ رو بفرست:",
+        f"💰 موجودی: {bal} DOGS\n"
+        f"📌 حداقل برداشت: {MIN_WITHDRAW} DOGS\n\n"
+        f"مبلغ مورد نظر رو بفرست:",
         parse_mode="Markdown"
     )
 
@@ -268,7 +282,7 @@ def bet_kb(game_type):
     rows = []
     row = []
     for b in BET_LIST:
-        row.append(InlineKeyboardButton(f"{b} 🐕", callback_data=f"b_{game_type}_{b}"))
+        row.append(InlineKeyboardButton(f"{b} DOGS", callback_data=f"b_{game_type}_{b}"))
         if len(row) == 3:
             rows.append(row); row = []
     if row: rows.append(row)
@@ -280,7 +294,7 @@ async def cb_game_sel(update, context):
     game_type = q.data[2:]
     await q.edit_message_text(
         f"🎮 **{GAME_NAMES[game_type]}**\n\n"
-        f"💰 موجودی: {get_balance(q.from_user.id)} 🐕\n"
+        f"💰 موجودی: {get_balance(q.from_user.id)} DOGS\n"
         f"🎯 مبلغ شرط رو انتخاب کن:",
         reply_markup=bet_kb(game_type), parse_mode="Markdown"
     )
@@ -292,7 +306,7 @@ async def cb_bet_sel(update, context):
     
     bal = get_balance(q.from_user.id)
     if bal < bet:
-        await q.answer(f"❌ موجودی کافی نداری! ({bal} 🐕)", show_alert=True)
+        await q.answer(f"❌ موجودی کافی نداری! ({bal} DOGS)", show_alert=True)
         return
     
     kb = [
@@ -301,7 +315,7 @@ async def cb_bet_sel(update, context):
         [InlineKeyboardButton("❌ لغو", callback_data="cancel_all")],
     ]
     await q.edit_message_text(
-        f"🎮 **{GAME_NAMES[game_type]}** | شرط: **{bet}** 🐕\n\n"
+        f"🎮 **{GAME_NAMES[game_type]}** | شرط: **{bet}** DOGS\n\n"
         f"با کی می‌خوای بازی کنی؟",
         reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown"
     )
@@ -340,7 +354,7 @@ async def cb_play_bot(update, context):
     
     await q.edit_message_text(
         f"🤖 **بازی {GAME_NAMES[game_type]} با ربات**\n\n"
-        f"💰 شرط: **{bet}** 🐕\n"
+        f"💰 شرط: **{bet}** DOGS\n"
         f"🎯 تعداد پرتاب: **۳**\n\n"
         f"👤 امتیاز تو: **0**\n"
         f"🤖 امتیاز ربات: **0**\n\n"
@@ -372,7 +386,7 @@ async def cb_play_user(update, context):
     
     await q.edit_message_text(
         f"👥 **بازی {GAME_NAMES[game_type]}**\n\n"
-        f"💰 شرط: **{bet}** 🐕\n"
+        f"💰 شرط: **{bet}** DOGS\n"
         f"🎯 تعداد پرتاب: **۳** هر نفر\n\n"
         f"⏳ منتظر حریف...\n"
         f"اگه می‌خوای بازی کنی، دکمه رو بزن:",
@@ -397,7 +411,7 @@ async def cb_join(update, context):
     bet = game["bet"]
     bal = get_balance(p2_id)
     if bal < bet:
-        await q.answer(f"❌ موجودی کافی نداری! ({bal} 🐕)", show_alert=True); return
+        await q.answer(f"❌ موجودی کافی نداری! ({bal} DOGS)", show_alert=True); return
     
     change_balance(p1_id, -bet, f"شرط {GAME_NAMES[game['type']]}", "bet")
     change_balance(p2_id, -bet, f"شرط {GAME_NAMES[game['type']]}", "bet")
@@ -411,7 +425,7 @@ async def cb_join(update, context):
     
     await q.edit_message_text(
         f"🎮 **بازی {GAME_NAMES[game['type']]}**\n\n"
-        f"💰 شرط: **{bet}** 🐕\n"
+        f"💰 شرط: **{bet}** DOGS\n"
         f"🎯 هر نفر ۳ پرتاب\n\n"
         f"👤 <a href='tg://user?id={p1_id}'>بازیکن اول</a>: 0\n"
         f"👤 <a href='tg://user?id={p2_id}'>بازیکن دوم</a>: 0\n\n"
@@ -527,17 +541,15 @@ async def finish_bot_game(context, chat_id, game, details_text, bot_score):
     
     if p1 > p2:
         result = "🎉 **تو بردی!**"
-        reward_text = f"💰 جایزه: **+{payout}** 🐕"
+        reward_text = f"💰 جایزه: **+{payout}** DOGS"
         change_balance(uid, payout, f"برد در {GAME_NAMES[game_type]}", "win")
     elif p1 < p2:
         result = "😢 **تو باختی!**"
-        reward_text = f"💸 باخت: **-{bet}** 🐕"
+        reward_text = f"💸 باخت: **-{bet}** DOGS"
     else:
         result = "🤝 **مساوی!**"
-        reward_text = f"💰 برگشتی: **+{bet}** 🐕"
+        reward_text = f"💰 برگشتی: **+{bet}** DOGS"
         change_balance(uid, bet, f"مساوی در {GAME_NAMES[game_type]}", "draw")
-    
-    kb = [[InlineKeyboardButton("🔙 منوی بازی", callback_data="menu_games")]]
     
     await context.bot.send_message(
         chat_id=chat_id,
@@ -548,7 +560,7 @@ async def finish_bot_game(context, chat_id, game, details_text, bot_score):
             f"🤖 امتیاز ربات: **{p2}**\n\n"
             f"{result}\n{reward_text}"
         ),
-        reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown"
+        parse_mode="Markdown"
     )
     
     active_games.pop(f"{chat_id}_{uid}", None)
@@ -561,19 +573,17 @@ async def finish_user_game(context, chat_id, game, details_text, p2_score):
     
     if p1 > p2:
         result = f"🎉 <a href='tg://user?id={p1_id}'>بازیکن اول</a> برنده شد!"
-        reward_text = f"💰 جایزه: **+{payout}** 🐕"
+        reward_text = f"💰 جایزه: **+{payout}** DOGS"
         change_balance(p1_id, payout, f"برد در {GAME_NAMES[game_type]}", "win")
     elif p2 > p1:
         result = f"🎉 <a href='tg://user?id={p2_id}'>بازیکن دوم</a> برنده شد!"
-        reward_text = f"💰 جایزه: **+{payout}** 🐕"
+        reward_text = f"💰 جایزه: **+{payout}** DOGS"
         change_balance(p2_id, payout, f"برد در {GAME_NAMES[game_type]}", "win")
     else:
         result = "🤝 **مساوی!** پول برگشت."
-        reward_text = f"💰 هر کدوم **+{bet}** 🐕"
+        reward_text = f"💰 هر کدوم **+{bet}** DOGS"
         change_balance(p1_id, bet, f"مساوی در {GAME_NAMES[game_type]}", "draw")
         change_balance(p2_id, bet, f"مساوی در {GAME_NAMES[game_type]}", "draw")
-    
-    kb = [[InlineKeyboardButton("🔙 منوی بازی", callback_data="menu_games")]]
     
     await context.bot.send_message(
         chat_id=chat_id,
@@ -583,7 +593,7 @@ async def finish_user_game(context, chat_id, game, details_text, p2_score):
             f"👤 بازیکن دوم: **{p2}**\n\n"
             f"{result}\n{reward_text}"
         ),
-        reply_markup=InlineKeyboardMarkup(kb), parse_mode="HTML"
+        parse_mode="HTML"
     )
     
     active_games.pop(f"{chat_id}_{p1_id}", None)
@@ -622,6 +632,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat.type == "private":
         ensure_user(user.id, user.username, user.first_name)
         
+        # برداشت
         if user_state.get(user.id) == "withdraw":
             try:
                 amount = int(text.translate(PERSIAN))
@@ -630,9 +641,9 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             bal = get_balance(user.id)
             if amount < MIN_WITHDRAW:
-                await msg.reply_text(f"❌ حداقل {MIN_WITHDRAW} 🐕"); return
+                await msg.reply_text(f"❌ حداقل {MIN_WITHDRAW} DOGS"); return
             if amount > bal:
-                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} 🐕)"); return
+                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} DOGS)"); return
             
             change_balance(user.id, -amount, "درخواست برداشت", "withdraw")
             wid = create_withdrawal(user.id, user.username, amount)
@@ -646,7 +657,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         f"🆔 `#{wid}`\n"
                         f"👤 کاربر: @{user.username or user.first_name}\n"
                         f"🆔 آیدی: `{user.id}`\n"
-                        f"💰 مبلغ: **{amount}** 🐕"
+                        f"💰 مبلغ: **{amount}** DOGS"
                     ),
                     parse_mode="Markdown"
                 )
@@ -654,10 +665,11 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logging.error(f"ارسال کانال: {e}")
             
             await msg.reply_text(
-                f"✅ درخواست برداشت **{amount}** 🐕 ثبت شد.\nمنتظر تایید ادمین باش."
+                f"✅ درخواست برداشت **{amount}** DOGS ثبت شد.\nمنتظر تایید ادمین باش."
             )
             return
         
+        # ادمین
         if is_owner(user.id) and user_state.get(user.id, "").startswith("admin_"):
             await handle_admin_input(update, context); return
         
@@ -674,7 +686,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bal = get_balance(user.id)
         await msg.reply_text(
             f"💰 موجودی <a href='tg://user?id={user.id}'>{user.first_name}</a>: "
-            f"**{bal}** 🐕",
+            f"**{bal}** DOGS",
             parse_mode="HTML"
         )
         return
@@ -700,18 +712,18 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ensure_user(target.id, target.username, target.first_name)
             bal = get_balance(user.id)
             if bal < amount:
-                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} 🐕)"); return
+                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} DOGS)"); return
             
             if transfer(user.id, target.id, amount):
                 await msg.reply_text(
-                    f"✅ **{amount}** 🐕 به "
+                    f"✅ **{amount}** DOGS به "
                     f"<a href='tg://user?id={target.id}'>{target.first_name}</a> منتقل شد.",
                     parse_mode="HTML"
                 )
                 try:
                     await context.bot.send_message(
                         target.id,
-                        f"🎁 **{amount}** 🐕 از "
+                        f"🎁 **{amount}** DOGS از "
                         f"<a href='tg://user?id={user.id}'>{user.first_name}</a> دریافت کردی!",
                         parse_mode="HTML"
                     )
@@ -735,17 +747,17 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             bal = get_balance(user.id)
             if bal < amount:
-                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} 🐕)"); return
+                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} DOGS)"); return
             
             if transfer(user.id, target_id, amount):
                 await msg.reply_text(
-                    f"✅ **{amount}** 🐕 به @{target_uname.replace('@','')} منتقل شد.",
+                    f"✅ **{amount}** DOGS به @{target_uname.replace('@','')} منتقل شد.",
                     parse_mode="Markdown"
                 )
                 try:
                     await context.bot.send_message(
                         target_id,
-                        f"🎁 **{amount}** 🐕 از "
+                        f"🎁 **{amount}** DOGS از "
                         f"<a href='tg://user?id={user.id}'>{user.first_name}</a> دریافت کردی!",
                         parse_mode="HTML"
                     )
@@ -775,7 +787,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             bal = get_balance(user.id)
             if bal < bet:
-                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} 🐕)"); return
+                await msg.reply_text(f"❌ موجودی کافی نداری! ({bal} DOGS)"); return
             
             game_type = game_map[parts[1]]
             kb = [
@@ -784,7 +796,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("❌ لغو", callback_data="cancel_all")],
             ]
             await msg.reply_text(
-                f"🎮 **{GAME_NAMES[game_type]}** | شرط: **{bet}** 🐕\n\n"
+                f"🎮 **{GAME_NAMES[game_type]}** | شرط: **{bet}** DOGS\n\n"
                 f"چطور بازی کنی؟",
                 reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown"
             )
@@ -832,7 +844,7 @@ async def cb_admin(update, context):
         txt = "📊 **موجودی کاربران**\n\n"
         for i, (uid, uname, bal) in enumerate(users[:50], 1):
             name = f"@{uname}" if uname else str(uid)
-            txt += f"{i}_{name} - {bal} 🐕\n"
+            txt += f"{i}_{name} - {bal} DOGS\n"
         txt += f"\n📌 کل: {len(users)}"
         await q.edit_message_text(txt, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙", callback_data="a_panel")]]), parse_mode="Markdown")
     elif q.data == "a_wd":
@@ -846,7 +858,7 @@ async def cb_admin(update, context):
         for w in wds[:10]:
             wid, uid, uname, amount, status, created = w
             name = f"@{uname}" if uname else str(uid)
-            txt += f"`#{wid}` {name} - {amount} 🐕\n"
+            txt += f"`#{wid}` {name} - {amount} DOGS\n"
             if status == "pending":
                 kb_rows.append([
                     InlineKeyboardButton(f"✅ {wid}", callback_data=f"wd_ok_{wid}"),
@@ -883,11 +895,11 @@ async def handle_admin_input(update, context):
         if state == "admin_charge":
             ensure_user(target_id)
             change_balance(target_id, amount, "شارژ ادمین", "admin_charge")
-            await update.message.reply_text(f"✅ {amount} 🐕 به {target_id} اضافه شد.")
+            await update.message.reply_text(f"✅ {amount} DOGS به {target_id} اضافه شد.")
         elif state == "admin_deduct":
             ensure_user(target_id)
             change_balance(target_id, -amount, "کسر ادمین", "admin_deduct")
-            await update.message.reply_text(f"✅ {amount} 🐕 از {target_id} کم شد.")
+            await update.message.reply_text(f"✅ {amount} DOGS از {target_id} کم شد.")
         elif state == "admin_referral":
             conn = sqlite3.connect(DB); c = conn.cursor()
             c.execute("UPDATE users SET referral_count = referral_count + ? WHERE user_id=?", (amount, target_id))
