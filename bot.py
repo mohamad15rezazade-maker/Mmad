@@ -44,11 +44,11 @@ from telegram.ext import (
 # تنظیمات
 # ============================================================
 
-TOKEN = "PUT_YOUR_BOT_TOKEN_HERE"
+TOKEN = "8968692114:AAGUAyIwDzHcxZIXqeU59rJgRhvcApJto9k"
 
-CHANNEL_ID = -1000000000000
+CHANNEL_ID = -1004372755284
 
-ALLOWED_GROUP_ID = -1000000000000
+ALLOWED_GROUP_ID = -1003919206941
 
 OWNER_IDS = [8935601841, 8458210170]
 
