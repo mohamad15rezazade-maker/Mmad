@@ -12,14 +12,12 @@ from telegram.ext import (
 )
 
 # ==================== CONFIG ====================
-TOKEN = "8968692114:AAGUAyIwDzHcxZIXqeU59rJgRhvcApJto9k"
+TOKEN = "توکن_بات_خودت_رو_اینجا_بذار"
 
 OWNER_IDS = [8935601841, 8458210170]
 
-CHANNEL_ID = -1004372755284
-CHANNEL_URL = "https://t.me/BET_1XZX"
-
-ALLOWED_GROUP_ID = -1003919206941
+CHANNEL_ID = -1001234567890
+ALLOWED_GROUP_ID = -1001234567890
 GROUP_LINK = "https://t.me/GAP_BAZIN1"
 
 MIN_WITHDRAW = 2000
@@ -30,7 +28,6 @@ MAX_THROWS = 3
 GAME_EMOJI = {"tas": "🎲", "bowling": "🎳", "basketball": "🏀", "dart": "🎯"}
 GAME_NAMES = {"tas": "تاس", "bowling": "بولینگ", "basketball": "بسکتبال", "dart": "دارت"}
 PERSIAN = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
-
 CURRENCY = "داگز"
 
 active_games = {}
@@ -38,7 +35,6 @@ user_state = {}
 
 # ==================== PAYOUT ====================
 def get_payout(bet):
-    """محاسبه جایزه بر اساس مبلغ شرط"""
     if bet <= 100:
         return int(bet * 1.8)
     elif bet <= 200:
@@ -153,20 +149,6 @@ def update_withdrawal(wid, status):
 # ==================== HELPERS ====================
 def is_owner(uid): return uid in OWNER_IDS
 
-async def is_member(context, user_id):
-    try:
-        m = await context.bot.get_chat_member(CHANNEL_ID, user_id)
-        return m.status in ("member", "administrator", "creator")
-    except Exception as e:
-        logging.error(f"member check error: {e}")
-        return False
-
-def join_kb():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("عضویت در کانال", url=CHANNEL_URL)],
-        [InlineKeyboardButton("عضو شدم", callback_data="check_join")],
-    ])
-
 def calc_points(game_type, value):
     if game_type == "basketball":
         return value if value >= 4 else 0
@@ -218,17 +200,10 @@ async def show_main_menu(target, user, is_edit=False):
     else:
         await target.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
 
-# ==================== START ====================
+# ==================== START / HELP ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u = update.effective_user
     ensure_user(u.id, u.username, u.first_name)
-    
-    if not await is_member(context, u.id):
-        await update.message.reply_text(
-            "برای استفاده از بات باید اول عضو کانال بشی:",
-            reply_markup=join_kb()
-        )
-        return
     
     args = context.args
     user = get_user(u.id)
@@ -250,26 +225,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await show_main_menu(update.message, u, is_edit=False)
 
-async def cb_check_join(update, context):
-    q = update.callback_query; await q.answer()
-    if await is_member(context, q.from_user.id):
-        await show_main_menu(q, q.from_user, is_edit=True)
-    else:
-        await q.answer("هنوز عضو نشدی!", show_alert=True)
-
 async def help_cmd(update, context):
     await update.message.reply_text(
         "راهنمای کامل\n\n"
-        "در گپ بنویس:\n"
+        "بازی‌ها (در گپ):\n"
         "1 تاس 100\n"
         "1 بولینگ 100\n"
         "1 بسکتبال 100\n"
         "1 دارت 100\n\n"
-        "بازی زوج/فرد:\n"
+        "زوج/فرد:\n"
         "100 زوج\n"
         "100 فرد\n\n"
-        "نمایش موجودی:\n"
-        "موجودی یا م\n\n"
+        "موجودی:\n"
+        "م یا موجودی\n\n"
         "انتقال:\n"
         "انتقال 500 + ریپلای\n"
         "انتقال 500 @username\n\n"
@@ -328,7 +296,7 @@ async def cb_back_menu(update, context):
     user_state.pop(q.from_user.id, None)
     await show_main_menu(q, q.from_user, is_edit=True)
 
-# ==================== GAME MENU ====================
+# ==================== GAME CANCEL ====================
 async def cb_cancel_all(update, context):
     q = update.callback_query; await q.answer("لغو شد")
     try:
@@ -338,7 +306,6 @@ async def cb_cancel_all(update, context):
 
 # ==================== PLAY VS BOT ====================
 async def cb_play_bot(update, context):
-    """کاربر دکمه بازی با ربات رو زد - ربات تگ میکنه و میگه بریز"""
     q = update.callback_query; await q.answer()
     parts = q.data.split("_")
     game_type = parts[1]; bet = int(parts[2])
@@ -349,7 +316,6 @@ async def cb_play_bot(update, context):
     if bal < bet:
         await q.answer("موجودی کافی نداری!", show_alert=True); return
     
-    # کسر شرط
     change_balance(uid, -bet, f"شرط {GAME_NAMES[game_type]}", "bet")
     
     gid = f"{chat_id}_{uid}"
@@ -370,7 +336,7 @@ async def cb_play_bot(update, context):
         f"تعداد پرتاب: 3\n\n"
         f"امتیاز تو: 0\n"
         f"امتیاز ربات: 0\n\n"
-        f"{user_tag(uid, name)} نوبت توئه، بریز! 👇",
+        f"{user_tag(uid, name)} نوبت توئه، بریز!",
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="HTML"
     )
@@ -403,8 +369,7 @@ async def cb_play_user(update, context):
         f"شرط: {bet} {CURRENCY}\n"
         f"تعداد پرتاب: 3 هر نفر\n\n"
         f"{user_tag(uid, name)} بازی ساخت.\n"
-        f"منتظر حریف...\n\n"
-        f"اگه می‌خوای بازی کنی، دکمه زیر رو بزن:",
+        f"منتظر حریف...",
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="HTML"
     )
@@ -446,7 +411,7 @@ async def cb_join(update, context):
         f"هر نفر 3 پرتاب\n\n"
         f"{user_tag(p1_id, 'بازیکن اول')}: 0\n"
         f"{user_tag(p2_id, p2_name)}: 0\n\n"
-        f"{user_tag(p1_id, 'بازیکن اول')} نوبت توئه، بریز! 👇",
+        f"{user_tag(p1_id, 'بازیکن اول')} نوبت توئه، بریز!",
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="HTML"
     )
@@ -492,13 +457,12 @@ async def cb_throw(update, context):
     )
     
     if game["mode"] == "bot":
-        # بازی با ربات - نوبت ربات
         game["state"] = "bot"
         
         await context.bot.send_message(
             chat_id=chat_id,
             text=(
-                f"نتیجه پرتاب‌های {user_tag(thrower_id, thrower_name)} ({GAME_NAMES[game_type]})\n\n"
+                f"نتیجه پرتاب‌های {user_tag(thrower_id, thrower_name)}\n\n"
                 f"{details_text}\n\n"
                 f"امتیاز کل تو: {total}\n\n"
                 f"الان نوبت رباته..."
@@ -507,8 +471,7 @@ async def cb_throw(update, context):
         )
         
         await asyncio.sleep(2)
-        
-        await context.bot.send_message(chat_id=chat_id, text="🤖 ربات داره پرتاب می‌کنه...")
+        await context.bot.send_message(chat_id=chat_id, text="ربات داره پرتاب می‌کنه...")
         
         bot_total, bot_details = await throw_n_times(context, chat_id, game_type, MAX_THROWS)
         game["p2_score"] = bot_total
@@ -521,7 +484,6 @@ async def cb_throw(update, context):
         await finish_bot_game(context, chat_id, game, bot_details_text, bot_total)
     
     else:
-        # بازی با دوست
         if thrower_key == "p1":
             game["state"] = "p2"
             kb = [[InlineKeyboardButton(f"پرتاب 3 {emoji}", callback_data=f"th_{chat_id}_{p1_id}")],
@@ -533,7 +495,7 @@ async def cb_throw(update, context):
                     f"نتیجه پرتاب‌های {user_tag(thrower_id, thrower_name)}\n\n"
                     f"{details_text}\n\n"
                     f"امتیاز: {total}\n\n"
-                    f"{user_tag(game['p2_id'], 'بازیکن دوم')} نوبت توئه، بریز! 👇"
+                    f"{user_tag(game['p2_id'], 'بازیکن دوم')} نوبت توئه، بریز!"
                 ),
                 reply_markup=InlineKeyboardMarkup(kb),
                 parse_mode="HTML"
@@ -548,24 +510,24 @@ async def finish_bot_game(context, chat_id, game, details_text, bot_score):
     uid = game["p1_id"]; payout = get_payout(bet)
     
     if p1 > p2:
-        result = "🎉 تو بردی!"
+        result = "تو بردی!"
         reward_text = f"جایزه: +{payout} {CURRENCY}"
         change_balance(uid, payout, f"برد در {GAME_NAMES[game_type]}", "win")
     elif p1 < p2:
-        result = "😢 تو باختی!"
+        result = "تو باختی!"
         reward_text = f"باخت: -{bet} {CURRENCY}"
     else:
-        result = "🤝 مساوی!"
+        result = "مساوی!"
         reward_text = f"برگشتی: +{bet} {CURRENCY}"
         change_balance(uid, bet, f"مساوی در {GAME_NAMES[game_type]}", "draw")
     
     await context.bot.send_message(
         chat_id=chat_id,
         text=(
-            f"🎮 نتیجه نهایی {GAME_NAMES[game_type]}\n\n"
-            f"🤖 پرتاب‌های ربات:\n{details_text}\n\n"
-            f"👤 امتیاز تو: {p1}\n"
-            f"🤖 امتیاز ربات: {p2}\n\n"
+            f"نتیجه نهایی {GAME_NAMES[game_type]}\n\n"
+            f"پرتاب‌های ربات:\n{details_text}\n\n"
+            f"امتیاز تو: {p1}\n"
+            f"امتیاز ربات: {p2}\n\n"
             f"{result}\n{reward_text}"
         )
     )
@@ -579,15 +541,15 @@ async def finish_user_game(context, chat_id, game, details_text, p2_score):
     payout = get_payout(bet)
     
     if p1 > p2:
-        result = f"🎉 {user_tag(p1_id, 'بازیکن اول')} برنده شد!"
+        result = f"{user_tag(p1_id, 'بازیکن اول')} برنده شد!"
         reward_text = f"جایزه: +{payout} {CURRENCY}"
         change_balance(p1_id, payout, f"برد در {GAME_NAMES[game_type]}", "win")
     elif p2 > p1:
-        result = f"🎉 {user_tag(p2_id, 'بازیکن دوم')} برنده شد!"
+        result = f"{user_tag(p2_id, 'بازیکن دوم')} برنده شد!"
         reward_text = f"جایزه: +{payout} {CURRENCY}"
         change_balance(p2_id, payout, f"برد در {GAME_NAMES[game_type]}", "win")
     else:
-        result = "🤝 مساوی! پول برگشت."
+        result = "مساوی! پول برگشت."
         reward_text = f"هر کدوم +{bet} {CURRENCY}"
         change_balance(p1_id, bet, f"مساوی در {GAME_NAMES[game_type]}", "draw")
         change_balance(p2_id, bet, f"مساوی در {GAME_NAMES[game_type]}", "draw")
@@ -595,9 +557,9 @@ async def finish_user_game(context, chat_id, game, details_text, p2_score):
     await context.bot.send_message(
         chat_id=chat_id,
         text=(
-            f"🎮 نتیجه نهایی {GAME_NAMES[game_type]}\n\n"
-            f"👤 بازیکن اول: {p1}\n"
-            f"👤 بازیکن دوم: {p2}\n\n"
+            f"نتیجه نهایی {GAME_NAMES[game_type]}\n\n"
+            f"بازیکن اول: {p1}\n"
+            f"بازیکن دوم: {p2}\n\n"
             f"{result}\n{reward_text}"
         ),
         parse_mode="HTML"
@@ -648,10 +610,10 @@ async def play_even_odd(context, chat_id, user, bet, choice):
     
     if user_won:
         change_balance(user.id, payout, f"برد در {choice}", "win")
-        result = "🎉 بردی!"
+        result = "بردی!"
         reward = f"جایزه: +{payout} {CURRENCY}"
     else:
-        result = "😢 باختی!"
+        result = "باختی!"
         reward = f"باخت: -{bet} {CURRENCY}"
     
     await context.bot.send_message(
@@ -795,7 +757,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     parts = text.split()
     
-    # بازی زوج/فرد (2 کلمه)
+    # زوج/فرد
     if len(parts) == 2:
         parts_clean = [p.translate(PERSIAN) for p in parts]
         if parts[1] in ("زوج", "فرد"):
@@ -814,7 +776,7 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await play_even_odd(context, chat.id, user, bet, parts[1])
             return
     
-    # بازی‌های 3 کلمه‌ای
+    # بازی‌ها
     if len(parts) >= 3:
         game_map = {"تاس": "tas", "بولینگ": "bowling",
                     "بسکتبال": "basketball", "دارت": "dart"}
@@ -872,27 +834,19 @@ async def cb_admin(update, context):
     elif q.data == "a_chg":
         user_state[q.from_user.id] = "admin_charge"
         await q.edit_message_text(
-            "شارژ موجودی\n\n"
-            "فرمت: user_id amount\n"
-            "یا: @username amount\n\n"
-            "مثال: 123456789 500\n"
-            "مثال: @MMAD_Tek 500",
+            "شارژ موجودی\n\nفرمت: user_id amount\nیا: @username amount\n\nمثال: 123456789 500\nمثال: @MMAD_Tek 500",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("بازگشت", callback_data="a_panel")]])
         )
     elif q.data == "a_ded":
         user_state[q.from_user.id] = "admin_deduct"
         await q.edit_message_text(
-            "کسر موجودی\n\n"
-            "فرمت: user_id amount\n"
-            "مثال: 123456789 500",
+            "کسر موجودی\n\nفرمت: user_id amount\nمثال: 123456789 500",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("بازگشت", callback_data="a_panel")]])
         )
     elif q.data == "a_ref":
         user_state[q.from_user.id] = "admin_referral"
         await q.edit_message_text(
-            "افزایش زیرمجموعه\n\n"
-            "فرمت: user_id count\n"
-            "مثال: 123456789 5",
+            "افزایش زیرمجموعه\n\nفرمت: user_id count\nمثال: 123456789 5",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("بازگشت", callback_data="a_panel")]])
         )
     elif q.data == "a_usr":
@@ -969,21 +923,13 @@ async def handle_admin_input(update, context):
             change_balance(target_id, amount, "شارژ ادمین", "admin_charge")
             bal_after = get_balance(target_id)
             await update.message.reply_text(
-                f"شارژ موفق\n\n"
-                f"کاربر: {target_id}\n"
-                f"قبل: {bal_before} {CURRENCY}\n"
-                f"اضافه شد: {amount} {CURRENCY}\n"
-                f"بعد: {bal_after} {CURRENCY}"
+                f"شارژ موفق\n\nکاربر: {target_id}\nقبل: {bal_before} {CURRENCY}\nاضافه شد: {amount} {CURRENCY}\nبعد: {bal_after} {CURRENCY}"
             )
         elif state == "admin_deduct":
             change_balance(target_id, -amount, "کسر ادمین", "admin_deduct")
             bal_after = get_balance(target_id)
             await update.message.reply_text(
-                f"کسر موفق\n\n"
-                f"کاربر: {target_id}\n"
-                f"قبل: {bal_before} {CURRENCY}\n"
-                f"کم شد: {amount} {CURRENCY}\n"
-                f"بعد: {bal_after} {CURRENCY}"
+                f"کسر موفق\n\nکاربر: {target_id}\nقبل: {bal_before} {CURRENCY}\nکم شد: {amount} {CURRENCY}\nبعد: {bal_after} {CURRENCY}"
             )
         elif state == "admin_referral":
             conn = sqlite3.connect(DB); c = conn.cursor()
@@ -994,11 +940,7 @@ async def handle_admin_input(update, context):
         
         user_state.pop(uid, None)
     except ValueError:
-        await update.message.reply_text(
-            "خطا در اعداد!\n"
-            "مثال: 123456789 500\n"
-            "یا: @username 500"
-        )
+        await update.message.reply_text("خطا در اعداد!\nمثال: 123456789 500")
     except Exception as e:
         await update.message.reply_text(f"خطا: {e}")
 
@@ -1013,7 +955,6 @@ def main():
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("admin", admin_cmd))
     
-    app.add_handler(CallbackQueryHandler(cb_check_join, pattern="^check_join$"))
     app.add_handler(CallbackQueryHandler(cb_back_menu, pattern="^back_menu$"))
     app.add_handler(CallbackQueryHandler(cb_user_ref, pattern="^u_ref$"))
     app.add_handler(CallbackQueryHandler(cb_user_bal, pattern="^u_bal$"))
