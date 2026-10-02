@@ -1,0 +1,35 @@
+name: 🎮 Run DAWGS Bot
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 */6 * * *'  # هر ۶ ساعت یه بار ری‌استارت
+  workflow_dispatch:        # اجرای دستی
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360    # حداکثر ۶ ساعت اجرا
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-telegram-bot==21.11.1
+
+      - name: ▶️ Run bot
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          WITHDRAW_CHANNEL_ID: ${{ secrets.WITHDRAW_CHANNEL_ID }}
+          ALLOWED_GROUP_ID: ${{ secrets.ALLOWED_GROUP_ID }}
+        run: |
+          python bot.py
