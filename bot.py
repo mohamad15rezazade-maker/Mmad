@@ -12,13 +12,13 @@ from telegram.ext import (
 )
 
 # ==================== CONFIG ====================
-TOKEN = "توکن_بات_خودت_رو_اینجا_بذار"
+TOKEN = "8968692114:AAGUAyIwDzHcxZIXqeU59rJgRhvcApJto9k"
 
 OWNER_IDS = [8935601841, 8458210170]
 
 # آیدی عددی کانال و گپ (با - شروع میشه)
-WITHDRAW_CHANNEL_ID = -1001234567890
-ALLOWED_GROUP_ID = -1001234567890
+WITHDRAW_CHANNEL_ID = -1004372755284
+ALLOWED_GROUP_ID = -1003919206941
 
 GROUP_LINK = "https://t.me/GAP_BAZIN1"
 
